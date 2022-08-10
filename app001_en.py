@@ -145,16 +145,19 @@ background_color = '#E4FFC9'
 
 app.layout = html.Div([
     dbc.Row([
+    
 
     dbc.Col(children=[
             
         dbc.Row([ 
-                
-            html.Div([
+            dcc.Loading(
+                html.Div([
                 dcc.Graph(id='graph', config={'displayModeBar': False, 'scrollZoom': True})
 
-            ])      
+            ]),   
 
+            type="circle")   
+              
         ])
 
     ])
@@ -252,7 +255,7 @@ def update_figure(chosen_lenght):
             width=1430, 
             height=600,
             mapbox=dict(
-            center=go.layout.mapbox.Center(lat=47, lon=9),
+            center=go.layout.mapbox.Center(lat=47, lon=10),
             zoom=8),
             margin=dict(
         l=40,
