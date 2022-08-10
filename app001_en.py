@@ -175,7 +175,7 @@ app.layout = html.Div([
 
                         style={'color': '#7C7672', "backgroundColor":'#E4FFC9', "font-family": "Arial", 'padding-bottom':'20px'}
                         ),
-                html.P("Explanation: Move the mouse over the red bubbles for information about date, difficulty and availability. A click on the bubble will display the link to the detailed tour information below:", 
+                html.P("Explanation: Move the mouse over the red bubbles for information about date, difficulty and availability. A click on the bubble will display the link to the detailed tour information below.", 
                     style={"backgroundColor":'#E4FFC9', "font-family": "Arial", 'fontSize': "1.725em"}
                     ),
                 html.Pre(id='web_link', children=[],
