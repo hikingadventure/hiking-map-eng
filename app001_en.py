@@ -133,7 +133,7 @@ df_table["Availability"] = availability
 
 
 
-print(df_table)
+#print(df_table)
 
 app = dash.Dash(__name__,
 meta_tags=[{'name': 'viewport',
