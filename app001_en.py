@@ -286,7 +286,7 @@ def update_figure(chosen_lenght):
             width=1430, 
             height=600,
             mapbox=dict(
-            center=go.layout.mapbox.Center(lat=47, lon=11),
+            center=go.layout.mapbox.Center(lat=47, lon=14),
             zoom=6),
             margin=dict(
         l=40,
