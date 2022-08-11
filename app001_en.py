@@ -17,7 +17,7 @@ import base64
 import json
 
 #connecting to WordPress database
-api_url = 'https://wander-erlebnis.ch/wp-json/wp/v2/programm' 
+api_url = 'https://wander-erlebnis.ch/wp-json/wp/v2/hikes-and-tours' 
 response = requests.get(api_url, 'lxml')
 response_list = json.loads(response.text)
 
@@ -259,7 +259,7 @@ def update_figure(chosen_lenght):
             height=600,
             mapbox=dict(
             center=go.layout.mapbox.Center(lat=47, lon=10),
-            zoom=8),
+            zoom=6),
             margin=dict(
         l=40,
         r=40,
