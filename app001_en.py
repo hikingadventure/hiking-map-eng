@@ -116,7 +116,36 @@ df_table["color"] = list_color_map
 
 
 #df_table["Date"] =  pd.to_datetime(df_table["Date"])
-df_table["Date"] = df_table["Date"].str.replace(".","")
+#df_table["Date"] = df_table["Date"].str.replace(".","")
+
+#formatting the date
+df_one = pd.DataFrame()
+df_one = df_table["date_one_day"].str.split('-', expand=True)
+
+df_several = pd.DataFrame()
+df_several = df_table["date_several_days"].str.split('-', expand=True)
+
+char_to_replace = {'01': 'January', '02': 'February', '03': 'March', '04': 'April', '05': 'May', '06': 'June',
+                   '07': 'July', '08': 'August', '09': 'September', '10': 'October', '11': 'November', '12': 'December' 
+                   }
+for key, value in char_to_replace.items():
+    df_one[1] = df_one[1].str.replace(key, value)
+
+for key, value in char_to_replace.items():
+    df_several[1] = df_several[1].str.replace(key, value)
+
+df_one_day = pd.DataFrame(columns=["one_day_replaced"])
+df_one_day["one_day_replaced"] = df_one[2]+ " " + df_one[1] + " " + df_one[0]
+df_one_day["one_day_replaced"] = df_one_day["one_day_replaced"].str.replace("00 00 0000","")
+
+df_several_day = pd.DataFrame(columns=["several_day_replaced"])
+df_several_day["several_day_replaced"] = df_several[2]+ " " + df_several[1] + " " + df_several[0]
+df_several_day["several_day_replaced"] = df_several_day["several_day_replaced"].str.replace("00 00 0000","")
+
+df_table["Date"] = df_one_day["one_day_replaced"] + df_several_day["several_day_replaced"]
+
+
+
 
 
 #calculating fully booked/ places available
@@ -149,7 +178,6 @@ background_color = '#E4FFC9'
 app.layout = html.Div([
     dbc.Row([
     
-
     dbc.Col(children=[
             
         dbc.Row([ 
@@ -259,7 +287,7 @@ def update_figure(chosen_lenght):
             height=600,
             mapbox=dict(
             center=go.layout.mapbox.Center(lat=47, lon=10),
-            zoom=7),
+            zoom=8),
             margin=dict(
         l=40,
         r=40,
