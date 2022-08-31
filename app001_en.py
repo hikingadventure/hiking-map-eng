@@ -5,6 +5,8 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
 
+from dash import dash_table
+
 import dash_bootstrap_components as dbc
 
 import plotly.offline as py     #(version 4.4.1)
@@ -16,158 +18,187 @@ import requests
 import base64
 import json
 
-#connecting to WordPress database
-api_url = 'https://wander-erlebnis.ch/wp-json/wp/v2/hikes-and-tours' 
-response = requests.get(api_url, 'lxml')
-response_list = json.loads(response.text)
+from flask_caching import Cache
+
+def my_table():
+
+    #connecting to WordPress database
+    api_url = 'https://wander-erlebnis.ch/wp-json/wp/v2/programm' 
+    response = requests.get(api_url, 'lxml')
+    response_list = json.loads(response.text)
 
 
-#getting all tour ID's
-list_id_numbers = []
-tour_name = []
-for i in range(len(response_list)):
-  list_id_numbers.append(response_list[i]["id"])
-  tour_name.append(response_list[i]["title"]["rendered"])
+    #getting all tour ID's
+    list_id_numbers = []
+    tour_name = []
+    for i in range(len(response_list)):
+        list_id_numbers.append(response_list[i]["id"])
+        tour_name.append(response_list[i]["title"]["rendered"])
 
 
-#loop over a database and get data needed
+    #loop over a database and get data needed
 
-#list_tours = [340, 1034, 341, 1137]
+    #list_tours = [340, 1034, 341, 1137]
 
-list_max_number_of_people = []
-list_booked = []
-list_date_oneday = []
-list_date_severaldays = []
-list_lat = []
-list_long = []
-list_link = []
-list_difficulty = []
+    list_max_number_of_people = []
+    list_booked = []
+    list_date_oneday = []
+    list_date_severaldays = []
+    list_lat = []
+    list_long = []
+    #list_link = []
+    list_difficulty = []
 
-for i in list_id_numbers:
-  
-  output_dict = [x for x in response_list if x['id'] == i]
-  #tour_name.append(i)
-  max_number_of_people = [sub['anzahl_teilnehmende'] for sub in output_dict ]
-  list_max_number_of_people.append(max_number_of_people)
-  booked = [sub['buchungen'] for sub in output_dict ]
-  list_booked.append(booked)
-  date_oneday = [sub['datum_eintageswanderung'] for sub in output_dict ]
-  list_date_oneday.append(date_oneday)
-  date_severaldays = [sub['beginn_mehrtageswanderung'] for sub in output_dict ]
-  list_date_severaldays.append(date_severaldays)
-  latitude = [sub['breitengrad'] for sub in output_dict ]
-  list_lat.append(latitude)
-  longitude = [sub['laengengrad'] for sub in output_dict ]
-  list_long.append(longitude)
-  link = [sub['link'] for sub in output_dict ]
-  list_link.append(link)
-  difficulty = [sub['schwierigkeit_de'] for sub in output_dict ]
-  list_difficulty.append(difficulty)
-
-
-#getting rid of list of lists
-list_max_number_of_people = [j for i in list_max_number_of_people for j in i]
-list_booked = [j for i in list_booked for j in i]
-
-#creating table from data
-df_table = pd.DataFrame()
-df_table["Tour"] = tour_name
-df_table["Booked"] = list_booked
-df_table["max_num_people"] = list_max_number_of_people
-df_table["date_one_day"] = list_date_oneday
-df_table["date_several_days"] = list_date_severaldays
-df_table["breitengrad"] = list_lat
-df_table["laengengrad"] = list_long
-df_table["link"] = list_link
-df_table["difficulty"] = list_difficulty
+    for i in list_id_numbers:
+        
+        output_dict = [x for x in response_list if x['id'] == i]
+        #tour_name.append(i)
+        max_number_of_people = [sub['anzahl_teilnehmende'] for sub in output_dict ]
+        list_max_number_of_people.append(max_number_of_people)
+        booked = [sub['buchungen'] for sub in output_dict ]
+        list_booked.append(booked)
+        date_oneday = [sub['datum_eintageswanderung'] for sub in output_dict ]
+        list_date_oneday.append(date_oneday)
+        date_severaldays = [sub['beginn_mehrtageswanderung'] for sub in output_dict ]
+        list_date_severaldays.append(date_severaldays)
+        latitude = [sub['breitengrad'] for sub in output_dict ]
+        list_lat.append(latitude)
+        longitude = [sub['laengengrad'] for sub in output_dict ]
+        list_long.append(longitude)
+        #link = [sub['link'] for sub in output_dict ]
+        #list_link.append(link)
+        difficulty = [sub['schwierigkeit_de'] for sub in output_dict ]
+        list_difficulty.append(difficulty)
 
 
-#get rid of lists in columns
-df_table["date_one_day"] = df_table.apply(lambda x: pd.Series(x['date_one_day']),axis=1).stack().reset_index(level=1, drop=True)
-df_table["date_several_days"] = df_table.apply(lambda x: pd.Series(x['date_several_days']),axis=1).stack().reset_index(level=1, drop=True)
-df_table["breitengrad"] = df_table.apply(lambda x: pd.Series(x['breitengrad']),axis=1).stack().reset_index(level=1, drop=True)
-df_table["laengengrad"] = df_table.apply(lambda x: pd.Series(x['laengengrad']),axis=1).stack().reset_index(level=1, drop=True)
-df_table["link"] = df_table.apply(lambda x: pd.Series(x['link']),axis=1).stack().reset_index(level=1, drop=True)
-df_table["difficulty"] = df_table.apply(lambda x: pd.Series(x['difficulty']),axis=1).stack().reset_index(level=1, drop=True)
+    #getting rid of list of lists
+    list_max_number_of_people = [j for i in list_max_number_of_people for j in i]
+    list_booked = [j for i in list_booked for j in i]
+
+    #creating table from data
+    df_table = pd.DataFrame()
+    #df_table["Tour"] = tour_name
+    df_table["Booked"] = list_booked
+    df_table["max_num_people"] = list_max_number_of_people
+    df_table["date_one_day"] = list_date_oneday
+    df_table["date_several_days"] = list_date_severaldays
+    df_table["breitengrad"] = list_lat
+    df_table["laengengrad"] = list_long
+    #df_table["link"] = list_link
+    df_table["difficulty"] = list_difficulty
 
 
-#difficulty lvl
-df_table["difficulty_lvl"] = df_table["difficulty"].str[:2]
-
-#Combine 2 columns into one
-df_table["Date"] = df_table["date_one_day"] + df_table["date_several_days"]
-
-#calculating Tour Lenght
-list_tour_lenght = []
-for i in range(len(df_table["date_one_day"])):
-  if df_table["date_one_day"][i] == "":
-    list_tour_lenght.append("Several days")
-  else:
-    list_tour_lenght.append("One day")
-
-df_table["Tour_Length"] = list_tour_lenght
+    #get rid of lists in columns
+    df_table["date_one_day"] = df_table.apply(lambda x: pd.Series(x['date_one_day']),axis=1).stack().reset_index(level=1, drop=True)
+    df_table["date_several_days"] = df_table.apply(lambda x: pd.Series(x['date_several_days']),axis=1).stack().reset_index(level=1, drop=True)
+    df_table["breitengrad"] = df_table.apply(lambda x: pd.Series(x['breitengrad']),axis=1).stack().reset_index(level=1, drop=True)
+    df_table["laengengrad"] = df_table.apply(lambda x: pd.Series(x['laengengrad']),axis=1).stack().reset_index(level=1, drop=True)
+    #df_table["link"] = df_table.apply(lambda x: pd.Series(x['link']),axis=1).stack().reset_index(level=1, drop=True)
+    df_table["difficulty"] = df_table.apply(lambda x: pd.Series(x['difficulty']),axis=1).stack().reset_index(level=1, drop=True)
 
 
-list_color_map =[]
-for i in range(len(response_list)):
-    list_color_map.append("red")
+    #difficulty lvl
+    df_table["difficulty_lvl"] = df_table["difficulty"].str[:2]
 
-df_table["color"] = list_color_map
+    df_table["difficulty_lvl_display"] = df_table["difficulty"].str[:2]
 
-
-#df_table["Date"] =  pd.to_datetime(df_table["Date"])
-#df_table["Date"] = df_table["Date"].str.replace(".","")
-
-#formatting the date
-df_one = pd.DataFrame()
-df_one = df_table["date_one_day"].str.split('-', expand=True)
-
-df_several = pd.DataFrame()
-df_several = df_table["date_several_days"].str.split('-', expand=True)
-
-char_to_replace = {'01': 'January', '02': 'February', '03': 'March', '04': 'April', '05': 'May', '06': 'June',
-                   '07': 'July', '08': 'August', '09': 'September', '10': 'October', '11': 'November', '12': 'December' 
-                   }
-for key, value in char_to_replace.items():
-    df_one[1] = df_one[1].str.replace(key, value)
-
-for key, value in char_to_replace.items():
-    df_several[1] = df_several[1].str.replace(key, value)
-
-df_one_day = pd.DataFrame(columns=["one_day_replaced"])
-df_one_day["one_day_replaced"] = df_one[2]+ " " + df_one[1] + " " + df_one[0]
-df_one_day["one_day_replaced"] = df_one_day["one_day_replaced"].str.replace("00 00 0000","")
-
-df_several_day = pd.DataFrame(columns=["several_day_replaced"])
-df_several_day["several_day_replaced"] = df_several[2]+ " " + df_several[1] + " " + df_several[0]
-df_several_day["several_day_replaced"] = df_several_day["several_day_replaced"].str.replace("00 00 0000","")
-
-df_table["Date"] = df_one_day["one_day_replaced"] + df_several_day["several_day_replaced"]
+    df_table["difficulty_lvl_display"] = df_table["difficulty_lvl"].map({"T1": "T1 hiking",
+                                                         "T2": "T2 mountain hiking",
+                                                         "T3": "T3 difficult mountain hiking"
+                                                         })
 
 
 
+    #Combine 2 columns into one
+    df_table["Date"] = df_table["date_one_day"] + df_table["date_several_days"]
+    df_table["Date"] = df_table["Date"].str.replace(".","")
+
+    #calculating Tour Lenght
+    list_tour_lenght = []
+    for i in range(len(df_table["date_one_day"])):
+        if df_table["date_one_day"][i] == "":
+            list_tour_lenght.append("Several days")
+        else:
+            list_tour_lenght.append("One day")
+
+    df_table["Tour_Length"] = list_tour_lenght
 
 
-#calculating fully booked/ places available
-availability = []
-for i in range(len(df_table)):
-  if df_table["Booked"][i] == df_table["max_num_people"][i]:
-    availability.append("fully booked")
-    #print("fully booked")
-  else:
-    availability.append("places available")
-    #print("places available")
+    list_color_map =[]
+    for i in range(len(response_list)):
+        list_color_map.append("red")
 
-df_table["Availability"] = availability
+    df_table["color"] = list_color_map
+
+    #df_table["Date"] = df_table["Date"].str.replace(".","")
 
 
+    #calculating fully booked/ places available
+    availability = []
+    for i in range(len(df_table)):
+        if df_table["Booked"][i] == df_table["max_num_people"][i]:
+            availability.append("fully booked")
+        #print("fully booked")
+        else:
+            availability.append("places available")
+        #print("places available")
 
-#print(df_table)
+    df_table["Availability"] = availability
 
-app = dash.Dash(__name__,
-meta_tags=[{'name': 'viewport',
-                            'content': 'width=device-width, initial-scale=1.0, maximum-scale=1.2, minimum-scale=0.5,'}]
-)
+
+    return df_table
+
+
+def my_table_l():
+
+    #connecting to WordPress database
+    api_url = 'https://wander-erlebnis.ch/wp-json/wp/v2/hikes-and-tours' 
+    response = requests.get(api_url, 'lxml')
+    response_list = json.loads(response.text)
+
+    #getting all tour ID's
+    list_id_numbers = []
+    tour_name = []
+    for i in range(len(response_list)):
+      list_id_numbers.append(response_list[i]["id"])
+      tour_name.append(response_list[i]["title"]["rendered"])
+
+
+    list_link = []
+    
+
+    for i in list_id_numbers:
+      
+      output_dict = [x for x in response_list if x['id'] == i]
+      
+      link = [sub['link'] for sub in output_dict ]
+      list_link.append(link)
+
+
+    #creating table from data
+    df = pd.DataFrame()
+    df["link"] = list_link
+    df["Tour"] = tour_name
+
+
+    #get rid of lists in columns
+    df["link"] = df.apply(lambda x: pd.Series(x['link']),axis=1).stack().reset_index(level=1, drop=True)
+
+    return df
+
+
+df_table = my_table()
+
+
+app = dash.Dash(__name__)
+
+cache = Cache(app.server, config={
+    'CACHE_TYPE': 'filesystem',
+    'CACHE_DIR': 'cache-directory'
+})
+
+TIMEOUT = 3600
+
 server = app.server
 
 blackbold={'color':'black', 'font-weight': 'bold', "font-family":"New Panam Skyline"}
@@ -177,18 +208,22 @@ background_color = '#E4FFC9'
 
 app.layout = html.Div([
     dbc.Row([
-    
+
     dbc.Col(children=[
             
         dbc.Row([ 
-            dcc.Loading(
-                html.Div([
-                dcc.Graph(id='graph', config={'displayModeBar': False, 'scrollZoom': True})
+            dcc.Loading(    
+            html.Div([
+                dcc.Graph(id='graph', config={'displayModeBar': False, 'scrollZoom': True}),
+                dcc.Interval(
+            id='interval-component',
+            interval=15*60*1000, # in milliseconds
+            n_intervals=0
+        )
 
-            ]),   
-
+            ]),
             type="circle")   
-              
+
         ])
 
     ])
@@ -198,9 +233,14 @@ app.layout = html.Div([
 
     dbc.Col(children=[
         dbc.Row([
-
+        
             html.Div([
+                html.Div(id="dataset"),
+                #dash_table.DataTable(id="dataset"),
+
                 html.Label(children=['Please select. '], style={"backgroundColor":'#E4FFC9', "font-family": "Arial", 'fontSize': "1.725em"}),
+                
+                dbc.Col(children=[
                 dcc.Checklist(id='tour_lenght_name',
                         options=[{'label':str(b),'value':b} for b in sorted(df_table['Tour_Length'].unique())],
                         value=[b for b in sorted(df_table['Tour_Length'].unique())],
@@ -209,6 +249,17 @@ app.layout = html.Div([
 
                         style={'color': '#7C7672', "backgroundColor":'#E4FFC9', "font-family": "Arial", 'padding-bottom':'20px'}
                         ),
+                ], xs=4),
+                dbc.Col(children=[
+                dcc.Checklist(id='tour_difficulty',
+                        options=[{'label':str(b),'value':b} for b in sorted(df_table['difficulty_lvl_display'].unique())],
+                        value=[b for b in sorted(df_table['difficulty_lvl_display'].unique())],
+                        #label_checked_style={"color": "red"},
+                        
+
+                        style={'color': '#7C7672', "backgroundColor":'#E4FFC9', "font-family": "Arial", 'padding-bottom':'20px'}
+                        ),
+                ], xs=4),
                 html.P("Explanation: Move the mouse over the red bubbles for information about date, difficulty and availability. A click on the bubble will display the link to the detailed tour information below.", 
                     style={"backgroundColor":'#E4FFC9', "font-family": "Arial", 'fontSize': "1.725em"}
                     ),
@@ -220,7 +271,7 @@ app.layout = html.Div([
             style={'color': '#7C7672', 'fontSize': 14, "backgroundColor":'#E4FFC9', 'padding-left':'40px'}
             )   
 
-        ]),
+        ])
 
     ])
 
@@ -230,18 +281,55 @@ app.layout = html.Div([
 
 
 
-# Output of Graph
-@app.callback(Output('graph', 'figure'),
-              [Input('tour_lenght_name', 'value')
 
+
+# Output of dataset
+@app.callback(Output('dataset', 'children'),
+              [
+              Input('interval-component', 'n_intervals')
               ])
 
-def update_figure(chosen_lenght):
+@cache.memoize(timeout=TIMEOUT)
+def update_data(n):
+
+    df_table = my_table()
+    print("the secont df table")
+    print(df_table)
+
+    df_link = my_table_l()
+
+
+    data = pd.concat([df_table, df_link], axis=1)
+
+
+    df_to_dict = data.to_dict('dict')
+
+    return df_to_dict
+
+
+
+
+# Output of Graph
+@app.callback(Output('graph', 'figure'),
+              [
+              Input('dataset', 'children'),
+              Input('tour_lenght_name', 'value'),
+              Input('tour_difficulty', 'value'),
+              ])
+
+
+def update_figure(d, chosen_lenght, chosen_difficulty):
+
+    df_table = pd.DataFrame.from_dict(d)
     
-    df_sub = df_table[(df_table['Tour_Length'].isin(chosen_lenght))]
+
+    #print("third table")
+    #print(df_table["difficulty_lvl_display"])
+
+    #df_sub = df_table[(df_table['Tour_Length'].isin(chosen_lenght))]
     
-    #df_sub = df_table[(df_table['Tour_Length'].isin(chosen_lenght)) &
-    #            (df_table['Date'].isin(chiden_day))]
+    df_sub = df_table[(df_table['Tour_Length'].isin(chosen_lenght)) &
+                (df_table['difficulty_lvl_display'].isin(chosen_difficulty))]
 
     
 
@@ -297,9 +385,6 @@ def update_figure(chosen_lenght):
     ),
         )
     }
-
-
-
 
 
 # callback for Web_link
