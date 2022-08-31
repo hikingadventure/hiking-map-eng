@@ -7,3 +7,4 @@ dash_bootstrap_components
 plotly
 requests
 gunicorn
+flask_caching
